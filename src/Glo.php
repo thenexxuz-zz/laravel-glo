@@ -3,15 +3,10 @@
 namespace TheNexxuz\LaravelGlo;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Subscriber\Oauth;
 
 class Glo
 {
-    private $accessToken = null;
-
-    private $clientId = null;
-
-    private $clientSecret = null;
+    private $accessToken = false;
 
     private $perPage = 25;
 
@@ -19,20 +14,8 @@ class Glo
 
     public function __construct(array $options)
     {
-        $accessToken = false;
-        $clientId = false;
-        $clientSecret = false;
-
         if (array_key_exists('accessToken', $options)) {
             $this->setAccessToken($options['accessToken']);
-            $accessToken = true;
-        }
-        if (array_key_exists('clientId', $options)) {
-            $this->setClientId($options['clientId']);
-            $clientId = true;
-        }
-        if (array_key_exists('clientSecret', $options)) {
-            $this->setClientSecret($options['clientSecret']);
         }
 
         if (array_key_exists('perPage', $options)) {
@@ -43,23 +26,15 @@ class Glo
             $this->setPage($options['page']);
         }
 
-        if (!$accessToken && !$clientId && $clientSecret) {
-            throw new \Exception('Client ID and Secret both must be set. Client ID is missing.');
-        }
-
-        if (!$accessToken && $clientId && !$clientSecret) {
-            throw new \Exception('Client ID and Secret both must be set. Client secret is missing.');
-        }
-
-        if ($accessToken && $clientId && $clientSecret) {
-            throw new \Exception("Please use only PAT or Client ID/Secret not both.");
+        if (!$this->getAccessToken()) {
+            throw new \Exception("Personal Access Token must be set.");
         }
     }
 
     /**
-     * @return null
+     * @return string
      */
-    public function getAccessToken()
+    public function getAccessToken(): string
     {
         return $this->accessToken;
     }
@@ -70,38 +45,6 @@ class Glo
     public function setAccessToken($accessToken): void
     {
         $this->accessToken = $accessToken;
-    }
-
-    /**
-     * @return null
-     */
-    public function getClientId()
-    {
-        return $this->clientId;
-    }
-
-    /**
-     * @param null $clientId
-     */
-    public function setClientId($clientId): void
-    {
-        $this->clientId = $clientId;
-    }
-
-    /**
-     * @return null
-     */
-    public function getClientSecret()
-    {
-        return $this->clientSecret;
-    }
-
-    /**
-     * @param null $clientSecret
-     */
-    public function setClientSecret($clientSecret): void
-    {
-        $this->clientSecret = $clientSecret;
     }
 
     /**
@@ -134,5 +77,30 @@ class Glo
     public function setPage(int $page): void
     {
         $this->page = $page;
+    }
+
+    private function getHeaders()
+    {
+        return [
+            'Authorization' => 'Bearer ' . $this->getAccessToken(),
+            'accept'        => 'application/json',
+        ];
+    }
+
+    public function getAllBoards()
+    {
+        $client = new Client();
+        try {
+            $response = $client->request('GET', 'https://gloapi.gitkraken.com/v1/glo/boards', [
+                'headers' => $this->getHeaders()
+            ]);
+        }
+        catch (\GuzzleException $e) {
+            dd('Guzzle Exception');
+        }
+        catch (\Exception $e) {
+            dd('Regular Exception');
+        }
+        dd($response->getStatusCode(), json_encode($response->getBody()));
     }
 }
