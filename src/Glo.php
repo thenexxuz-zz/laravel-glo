@@ -2,7 +2,9 @@
 
 namespace TheNexxuz\LaravelGlo;
 
+use \StdClass;
 use GuzzleHttp\Client;
+use \Exception;
 
 class Glo
 {
@@ -86,28 +88,45 @@ class Glo
         ];
     }
 
-    public function getAllBoards()
+    public function getAllBoards(): StdClass
     {
+        $r = new StdClass();
         try {
             $client = new Client();
             $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards?access_token='.$this->getAccessToken()  , [
                 'headers' => $this->getHeaders(),
                 'http_errors' => false,
             ]);
-            $r = $response->getBody()->getContents();
-            $statusCode = $response->getStatusCode();
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
         }
-        catch (\Exception $e) {
-            $r = [
+        catch (Exception $e) {
+            $r->data = [
                 'error' => $e->getMessage()
             ];
-            $statusCode = 500;
+            $r->statusCode = 500;
         }
+        return $r;
+    }
 
-        return response(
-            $r,
-            $statusCode,
-            ['Content-Type' => 'application/json']
-        );
+    public function getBoard(string $boardId): StdClass
+    {
+        $r = new StdClass();
+        try {
+            $client = new Client();
+            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '?access_token='.$this->getAccessToken()  , [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
     }
 }
