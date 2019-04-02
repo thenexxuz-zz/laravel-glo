@@ -15,7 +15,9 @@ class Glo
 
     private $page = 1;
 
-    private $columns = [];
+    protected $columns = [];
+
+    protected $labels = [];
 
     protected $boardId = '';
 
@@ -37,8 +39,12 @@ class Glo
             $this->setPage($options['page']);
         }
 
-        if (array_key_exists('columns', $options)) {
-            $this->setColumns($options['columns']);
+        if (array_key_exists('columns', $options) && array_key_exists('boardId', $options)) {
+            $this->setColumns($options['columns'], $options['boardId']);
+        }
+
+        if (array_key_exists('labels', $options) && array_key_exists('boardId', $options)) {
+            $this->setLabels($options['labels'], $options['boardId']);
         }
 
         if (!$this->getAccessToken()) {
@@ -183,7 +189,7 @@ class Glo
                     $cols[] = $col;
                 }
             }
-            $this->setColumns($boardId, $cols);
+            $this->setColumns($cols, $boardId);
         }
         return $r;
     }
@@ -239,7 +245,7 @@ class Glo
         return $r;
     }
 
-    public function updateBoard(string $boardId, string $name): StdClass
+    public function updateBoard(string $name, string $boardId): StdClass
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -269,7 +275,7 @@ class Glo
         return $r;
     }
 
-    public function setColumns(string $boardId, array $columns): void
+    public function setColumns(array $columns, string $boardId): void
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -280,12 +286,12 @@ class Glo
         $this->columns[$boardId] = [];
         if (!empty($columns)) {
             foreach ($columns as $column) {
-                $this->addColumn($boardId, $column);
+                $this->addColumn($column, $boardId);
             }
         }
     }
 
-    public function addColumn(string $boardId, Column $column): void
+    public function addColumn(Column $column, string $boardId = ''): void
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -307,7 +313,7 @@ class Glo
         return $this->columns[$boardId];
     }
 
-    public function updateColumn(string $boardId, string $columnId, Column $column)
+    public function updateColumn(string $columnId, Column $column, string $boardId = '')
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -386,7 +392,7 @@ class Glo
         return $r;
     }
 
-    public function findColumnById(string $boardId, string $columnId)
+    public function findColumnById(string $columnId, string $boardId)
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -405,7 +411,7 @@ class Glo
         return $found;
     }
 
-    public function deleteColumn(string $boardId, string $columnId): StdClass
+    public function deleteColumn(string $columnId, string $boardId = ''): StdClass
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -418,7 +424,7 @@ class Glo
             'error' => "NotFound: 'columnId' $columnId not found on 'boardId' $boardId"
         ];
         $r->statusCode = 404;
-        if ($this->findColumnById($boardId, $columnId)) {
+        if ($this->findColumnById($columnId, $boardId)) {
             try {
                 $client = new Client();
                 $response = $client->delete('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '/columns/' . $columnId, [
@@ -436,5 +442,170 @@ class Glo
             }
         }
         return $r;
+    }
+
+    public function setLabels(array $labels, string $boardId = '')
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $this->labels[$boardId] = [];
+        if (!empty($labels)) {
+            foreach ($labels as $label) {
+                $this->addLabel($label, $boardId);
+            }
+        }
+    }
+
+    public function addLabel(Label $label, string $boardId = '')
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $this->labels[$boardId][] = $label;
+    }
+
+    public function getLabels(string $boardId = ''): array
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        return $this->labels[$boardId];
+    }
+
+    public function syncLabels(string $boardId): StdClass
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        $r->data = array();
+        $r->statusCode = 200;
+        try {
+            $client = new Client();
+            if (!empty($this->getLabels($boardId))) {
+                foreach ($this->getLabels($boardId) as $label) {
+                    $res = new StdClass();
+                    $data = array();
+                    $data['name'] = $label->getName();
+                    $data['color'] = $label->getColor();
+                    $response = $client->post('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '/labels', [
+                        'headers' => $this->getHeaders(),
+                        'http_errors' => false,
+                        'json' => $data,
+                    ]);
+                    $res->data = json_decode($response->getBody()->getContents());
+                    $res->statusCode = $response->getStatusCode();
+                    $r->data[] = $res;
+                }
+            }
+            if (!empty($r->data)) {
+                $this->getBoard($boardId);
+            }
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function updateLabel(string $labelId, Label $label, string $boardId = '')
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        $r->data = array();
+        $r->statusCode = 200;
+        try {
+            $client = new Client();
+            $data = array();
+            $data['name'] = $label->getName();
+            $data['color'] = $label->getColor();
+            $response = $client->post('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '/labels/' . $labelId, [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+                'json' => $data,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function deleteLabel(string $labelId, string $boardId = ''): StdClass
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        $r->data = [
+            'error' => "NotFound: 'labelId' $labelId not found on 'boardId' $boardId"
+        ];
+        $r->statusCode = 404;
+        if ($this->findLabelById($labelId, $boardId)) {
+            try {
+                $client = new Client();
+                $response = $client->delete('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '/labels/' . $labelId, [
+                    'headers' => $this->getHeaders(),
+                    'http_errors' => false,
+                ]);
+                $r->data = $response->getBody()->getContents();
+                $r->statusCode = $response->getStatusCode();
+            }
+            catch (Exception $e) {
+                $r->data = [
+                    'error' => $e->getMessage()
+                ];
+                $r->statusCode = 500;
+            }
+        }
+        return $r;
+    }
+
+    public function findLabelById(string $labelId, string $boardId)
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $this->getBoard($boardId);
+        $found = false;
+        foreach ($this->getLabels($boardId) as $label) {
+            if (property_exists($label, 'id') && ($label->getId() === $labelId)) {
+                $found = $label;
+                continue;
+            }
+        }
+        return $found;
     }
 }

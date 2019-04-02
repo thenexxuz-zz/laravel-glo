@@ -1,8 +1,6 @@
 <?php
 
-
 namespace TheNexxuz\LaravelGlo;
-
 
 use JsonSerializable;
 
