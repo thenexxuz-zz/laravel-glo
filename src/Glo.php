@@ -17,10 +17,16 @@ class Glo
 
     private $columns = [];
 
+    protected $boardId = '';
+
     public function __construct(array $options)
     {
         if (array_key_exists('accessToken', $options)) {
             $this->setAccessToken($options['accessToken']);
+        }
+
+        if (array_key_exists('boardId', $options)) {
+            $this->setPerPage($options['boardId']);
         }
 
         if (array_key_exists('perPage', $options)) {
@@ -38,6 +44,22 @@ class Glo
         if (!$this->getAccessToken()) {
             throw new Exception("Personal Access Token must be set.");
         }
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBoardId()
+    {
+        return $this->boardId;
+    }
+
+    /**
+     * @param mixed $boardId
+     */
+    public function setBoardId($boardId): void
+    {
+        $this->boardId = $boardId;
     }
 
     /**
@@ -102,7 +124,7 @@ class Glo
         $r = new StdClass();
         try {
             $client = new Client();
-            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards', [
+            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards?fields[]=archived_columns&fields[]=archived_date&fields[]=columns&fields[]=created_by&fields[]=created_date&fields[]=invited_members&fields[]=labels&fields[]=members&fields[]=name', [
                 'headers' => $this->getHeaders(),
                 'http_errors' => false,
             ]);
@@ -118,8 +140,14 @@ class Glo
         return $r;
     }
 
-    public function getBoard(string $boardId): StdClass
+    public function getBoard(string $boardId=''): StdClass
     {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
         $r = new StdClass();
         try {
             $client = new Client();
@@ -155,7 +183,7 @@ class Glo
                     $cols[] = $col;
                 }
             }
-            $this->setColumns($cols);
+            $this->setColumns($boardId, $cols);
         }
         return $r;
     }
@@ -186,6 +214,12 @@ class Glo
 
     public function deleteBoard(string $boardId): StdClass
     {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
         $r = new StdClass();
         try {
             $client = new Client();
@@ -207,6 +241,12 @@ class Glo
 
     public function updateBoard(string $boardId, string $name): StdClass
     {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
         $r = new StdClass();
         try {
             $client = new Client();
@@ -229,35 +269,59 @@ class Glo
         return $r;
     }
 
-    public function setColumns(array $columns): void
+    public function setColumns(string $boardId, array $columns): void
     {
-        $this->columns = [];
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $this->columns[$boardId] = [];
         if (!empty($columns)) {
             foreach ($columns as $column) {
-                $this->addColumn($column);
+                $this->addColumn($boardId, $column);
             }
         }
     }
 
-    public function addColumn(Column $column): void
+    public function addColumn(string $boardId, Column $column): void
     {
-        $this->columns[] = $column;
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $this->columns[$boardId][] = $column;
     }
 
-    public function getColumns(): array
+    public function getColumns(string $boardId): array
     {
-        return $this->columns;
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        return $this->columns[$boardId];
     }
 
     public function syncColumns(string $boardId): StdClass
     {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
         $r = new StdClass();
         $r->data = array();
         $r->statusCode = 200;
         try {
             $client = new Client();
-            if (!empty($this->getColumns())) {
-                foreach ($this->getColumns() as $column) {
+            if (!empty($this->getColumns($boardId))) {
+                foreach ($this->getColumns($boardId) as $column) {
                     $res = new StdClass();
                     $data = array();
                     $data['name'] = $column->getName();
@@ -283,6 +347,58 @@ class Glo
                 'error' => $e->getMessage()
             ];
             $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function findColumnById(string $boardId, string $columnId)
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $this->getBoard($boardId);
+        $found = false;
+        foreach ($this->getColumns($boardId) as $column) {
+            if (property_exists($column, 'id') && ($column->getId() === $columnId)) {
+                $found = $column;
+                continue;
+            }
+        }
+        return $found;
+    }
+
+    public function deleteColumn(string $boardId, string $columnId): StdClass
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        $r->data = [
+            'error' => "NotFound: 'columnId' $columnId not found on 'boardId' $boardId"
+        ];
+        $r->statusCode = 404;
+        if ($this->findColumnById($boardId, $columnId)) {
+            try {
+                $client = new Client();
+                $response = $client->delete('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '/columns/' . $columnId, [
+                    'headers' => $this->getHeaders(),
+                    'http_errors' => false,
+                ]);
+                $r->data = $response->getBody()->getContents();
+                $r->statusCode = $response->getStatusCode();
+            }
+            catch (Exception $e) {
+                $r->data = [
+                    'error' => $e->getMessage()
+                ];
+                $r->statusCode = 500;
+            }
         }
         return $r;
     }
