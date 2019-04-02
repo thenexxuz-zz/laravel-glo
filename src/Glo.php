@@ -307,6 +307,41 @@ class Glo
         return $this->columns[$boardId];
     }
 
+    public function updateColumn(string $boardId, string $columnId, Column $column)
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        $r->data = array();
+        $r->statusCode = 200;
+        try {
+            $client = new Client();
+            $data = array();
+            $data['name'] = $column->getName();
+            if (!is_null($column->getPosition())) {
+                $data['position'] = $column->getPosition();
+            }
+            $response = $client->post('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '/columns/' . $columnId, [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+                'json' => $data,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
     public function syncColumns(string $boardId): StdClass
     {
         if ($boardId === '') {
