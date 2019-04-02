@@ -608,4 +608,25 @@ class Glo
         }
         return $found;
     }
+
+    public function getAuthUser()
+    {
+        $r = new StdClass();
+        try {
+            $client = new Client();
+            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/user?fields[]=email&fields[]=name&fields[]=username&fields[]=created_date', [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
 }
