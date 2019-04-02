@@ -4,6 +4,7 @@
     "type": "library",
     "minimum-stability": "dev",
     "require": {
+        "ext-json": "*",
         "guzzlehttp/guzzle": "^6.3"
     },
     "license": "GPLv2",
