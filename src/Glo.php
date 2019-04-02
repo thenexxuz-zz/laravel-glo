@@ -84,7 +84,9 @@ class Glo
     private function getHeaders()
     {
         return [
-            'accept'        => 'application/json',
+            'Authorization' => $this->getAccessToken(),
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json',
         ];
     }
 
@@ -93,7 +95,7 @@ class Glo
         $r = new StdClass();
         try {
             $client = new Client();
-            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards?access_token='.$this->getAccessToken()  , [
+            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards'  , [
                 'headers' => $this->getHeaders(),
                 'http_errors' => false,
             ]);
@@ -114,7 +116,52 @@ class Glo
         $r = new StdClass();
         try {
             $client = new Client();
-            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId . '?access_token='.$this->getAccessToken()  , [
+            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId  , [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function createBoard(string $name): StdClass
+    {
+        $r = new StdClass();
+        try {
+            $client = new Client();
+            $response = $client->post('https://gloapi.gitkraken.com/v1/glo/boards'  , [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+                'json' => [
+                    'name' => $name
+                ],
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function deleteBoard(string $boardId): StdClass
+    {
+        $r = new StdClass();
+        try {
+            $client = new Client();
+            $response = $client->delete('https://gloapi.gitkraken.com/v1/glo/boards/' . $boardId  , [
                 'headers' => $this->getHeaders(),
                 'http_errors' => false,
             ]);
