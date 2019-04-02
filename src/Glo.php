@@ -82,25 +82,32 @@ class Glo
     private function getHeaders()
     {
         return [
-            'Authorization' => 'Bearer ' . $this->getAccessToken(),
             'accept'        => 'application/json',
         ];
     }
 
     public function getAllBoards()
     {
-        $client = new Client();
         try {
-            $response = $client->request('GET', 'https://gloapi.gitkraken.com/v1/glo/boards', [
-                'headers' => $this->getHeaders()
+            $client = new Client();
+            $response = $client->get('https://gloapi.gitkraken.com/v1/glo/boards?access_token='.$this->getAccessToken()  , [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
             ]);
-        }
-        catch (\GuzzleException $e) {
-            dd('Guzzle Exception');
+            $r = $response->getBody()->getContents();
+            $statusCode = $response->getStatusCode();
         }
         catch (\Exception $e) {
-            dd('Regular Exception');
+            $r = [
+                'error' => $e->getMessage()
+            ];
+            $statusCode = 500;
         }
-        dd($response->getStatusCode(), json_encode($response->getBody()));
+
+        return response(
+            $r,
+            $statusCode,
+            ['Content-Type' => 'application/json']
+        );
     }
 }
