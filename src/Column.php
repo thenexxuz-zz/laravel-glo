@@ -119,6 +119,7 @@ class Column implements JsonSerializable
     {
         $this->createdBy = $createdBy;
     }
+
     public function jsonSerialize()
     {
         return get_object_vars($this);
