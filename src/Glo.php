@@ -352,7 +352,7 @@ class Glo
         return $r;
     }
 
-    public function syncColumns(string $boardId): StdClass
+    public function syncColumns(string $boardId = ''): StdClass
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -396,7 +396,7 @@ class Glo
         return $r;
     }
 
-    public function findColumnById(string $columnId, string $boardId)
+    public function findColumnById(string $columnId, string $boardId = '')
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -490,7 +490,7 @@ class Glo
         return $labels;
     }
 
-    public function syncLabels(string $boardId): StdClass
+    public function syncLabels(string $boardId = ''): StdClass
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -598,7 +598,7 @@ class Glo
         return $r;
     }
 
-    public function findLabelById(string $labelId, string $boardId)
+    public function findLabelById(string $labelId, string $boardId = '')
     {
         if ($boardId === '') {
             $boardId = $this->getBoardId();
@@ -623,6 +623,60 @@ class Glo
         try {
             $client = new Client();
             $response = $client->get('https://gloapi.gitkraken.com/v1/glo/user?fields[]=email&fields[]=name&fields[]=username&fields[]=created_date', [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function getCards(string $boardId = ''): StdClass
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        try {
+            $client = new Client();
+            $response = $client->get("https://gloapi.gitkraken.com/v1/glo/boards/$boardId/cards?fields[]=archived_date&fields[]=assignees&fields[]=attachment_count&fields[]=board_id&fields[]=column_id&fields[]=comment_count&fields[]=completed_task_count&fields[]=created_by&fields[]=created_date&fields[]=due_date&fields[]=description&fields[]=labels&fields[]=name&fields[]=total_task_count&fields[]=updated_date", [
+                'headers' => $this->getHeaders(),
+                'http_errors' => false,
+            ]);
+            $r->data = $response->getBody()->getContents();
+            $r->statusCode = $response->getStatusCode();
+        }
+        catch (Exception $e) {
+            $r->data = [
+                'error' => $e->getMessage()
+            ];
+            $r->statusCode = 500;
+        }
+        return $r;
+    }
+
+    public function getCard(string $cardId, string $boardId = ''): StdClass
+    {
+        if ($boardId === '') {
+            $boardId = $this->getBoardId();
+        }
+        if ($boardId === '') {
+            throw new Exception("Exception: 'boardId' must be set");
+        }
+        $r = new StdClass();
+        try {
+            $client = new Client();
+            $response = $client->get("https://gloapi.gitkraken.com/v1/glo/boards/$boardId/cards/$cardId?fields[]=archived_date&fields[]=assignees&fields[]=attachment_count&fields[]=board_id&fields[]=column_id&fields[]=comment_count&fields[]=completed_task_count&fields[]=created_by&fields[]=created_date&fields[]=due_date&fields[]=description&fields[]=labels&fields[]=name&fields[]=total_task_count&fields[]=updated_date", [
                 'headers' => $this->getHeaders(),
                 'http_errors' => false,
             ]);
