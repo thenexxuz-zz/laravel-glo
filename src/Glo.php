@@ -310,7 +310,11 @@ class Glo
         if ($boardId === '') {
             throw new Exception("Exception: 'boardId' must be set");
         }
-        return $this->columns[$boardId];
+        $columns = [];
+        if (array_key_exists($boardId, $this->columns)) {
+            $columns = $this->columns[$boardId];
+        }
+        return $columns;
     }
 
     public function updateColumn(string $columnId, Column $column, string $boardId = '')
@@ -479,7 +483,11 @@ class Glo
         if ($boardId === '') {
             throw new Exception("Exception: 'boardId' must be set");
         }
-        return $this->labels[$boardId];
+        $labels = [];
+        if (array_key_exists($boardId, $this->labels)) {
+            $labels = $this->labels[$boardId];
+        }
+        return $labels;
     }
 
     public function syncLabels(string $boardId): StdClass
