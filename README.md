@@ -17,7 +17,7 @@ Coming soon to a README.md near you!
 ### Glo API reference
 https://gloapi.gitkraken.com/v1/docs/
 
-###License
+### License
 GPLv2
 
 Author: William Penton <william@penton.us>
