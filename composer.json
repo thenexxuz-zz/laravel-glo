@@ -13,12 +13,5 @@
             "name": "William Penton",
             "email": "william@penton.us"
         }
-    ],
-    "extra": {
-        "laravel": {
-            "providers": [
-                "TheNexxuz\\LaravelGlo\\GloServiceProvider"
-            ]
-        }
-    }
+    ]
 }
