@@ -13,5 +13,10 @@
             "name": "William Penton",
             "email": "william@penton.us"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "TheNexxuz\\LaravelGlo\\": "src/"
+        }
+    }
 }
