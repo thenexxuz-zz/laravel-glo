@@ -28,7 +28,7 @@ class Glo
         }
 
         if (array_key_exists('boardId', $options)) {
-            $this->setPerPage($options['boardId']);
+            $this->setBoardId($options['boardId']);
         }
 
         if (array_key_exists('perPage', $options)) {
